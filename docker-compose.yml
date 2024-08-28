@@ -1,0 +1,88 @@
+services:
+
+    mariadb:
+        container_name: ${PROJECT_NAME}-mariadb
+        image: ${PROJECT_NAME}-mariadb:${PROJECT_NAME}-${PROJECT_VERSION}
+        build:
+            context: .
+            dockerfile: ${MARIADB_DOCKERFILE}/Dockerfile
+        ports:
+            - "${MARIADB_PORT}:${MARIADB_PORT}"
+        environment:
+            MYSQL_USER: ${MARIADB_USERNAME}
+            MYSQL_PASSWORD: ${MARIADB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${MARIADB_PASSWORD}
+        networks:
+            - unified
+        volumes:
+            - ${MARIADB_DOCKERFILE}:/docker-entrypoint-initdb.d
+            - database:/var/lib/mysql
+
+    phpmyadmin:
+        container_name: ${PROJECT_NAME}-phpmyadmin
+        image: ${PROJECT_NAME}-phpmyadmin:${PROJECT_NAME}-${PROJECT_VERSION}
+        build:
+            context: .
+            dockerfile: ${PHPMYADMIN_DOCKERFILE}/Dockerfile
+        ports:
+            - "${PHPMYADMIN_PORT}:${PHPMYADMIN_PORT_MAP}"
+        environment:
+            PMA_HOST: ${PHPMYADMIN_PMA_HOST}
+            PMA_USER: ${MARIADB_USERNAME}
+            PMA_PASSWORD: ${MARIADB_PASSWORD}
+        networks:
+            - unified
+        depends_on:
+            - mariadb
+
+    wordpress_1:
+        container_name: ${PROJECT_NAME}-wordpress_1
+        image: ${PROJECT_NAME}-wordpress_1:${PROJECT_NAME}-${PROJECT_VERSION}
+        build:
+            context: .
+            dockerfile: ${WORDPRESS_1_DOCKERFILE}/Dockerfile
+        ports:
+            - "${WORDPRESS_1_PORT}:${WORDPRESS_1_PORT_MAP}"
+        volumes:
+            - ${WORDPRESS_1_DIRECTORY}:${WORDPRESS_1_WORK_DIRECTORY}
+        working_dir: ${WORDPRESS_1_WORK_DIRECTORY}
+        environment:
+            WORDPRESS_DB_HOST: mariadb
+            WORDPRESS_DB_USER: ${MARIADB_USERNAME}
+            WORDPRESS_DB_PASSWORD: ${MARIADB_PASSWORD}
+            WORDPRESS_DB_NAME: ${MARIADB_DATABASE_1}
+        networks:
+            - unified
+        depends_on:
+            - mariadb
+
+    wordpress_2:
+        container_name: ${PROJECT_NAME}-wordpress_2
+        image: ${PROJECT_NAME}-wordpress_2:${PROJECT_NAME}-${PROJECT_VERSION}
+        build:
+            context: .
+            dockerfile: ${WORDPRESS_2_DOCKERFILE}/Dockerfile
+        ports:
+            - "${WORDPRESS_2_PORT}:${WORDPRESS_2_PORT_MAP}"
+        volumes:
+            - ${WORDPRESS_2_DIRECTORY}:${WORDPRESS_2_WORK_DIRECTORY}
+        working_dir: ${WORDPRESS_2_WORK_DIRECTORY}
+        environment:
+            WORDPRESS_DB_HOST: mariadb
+            WORDPRESS_DB_USER: ${MARIADB_USERNAME}
+            WORDPRESS_DB_PASSWORD: ${MARIADB_PASSWORD}
+            WORDPRESS_DB_NAME: ${MARIADB_DATABASE_2}
+        networks:
+            - unified
+        depends_on:
+            - mariadb
+
+networks:
+    unified:
+        name: ${PROJECT_NAME}-network
+        driver: bridge
+
+volumes:
+    database:
+        name: ${PROJECT_NAME}-database
+        driver: local
